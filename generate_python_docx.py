@@ -4,14 +4,14 @@ from docx.shared import Inches
 import numpy
 import matplotlib.pyplot as matpyplot
 from textwrap import wrap
-from docx.enum.text import WD_BREAK
+from docx.enum.text import WD_BREAK, WD_ALIGN_PARAGRAPH
 from datetime import date
 import json
 
 def generate_docx(branch):
-    document = Document()
+    document = Document('static/default_theme.docx')
 
-    document.add_picture('static/front_page.png', width=Inches(6), height=Inches(8.5))
+    document.add_picture('static/front_page.png', width=Inches(6), height=Inches(8))
 
     get_values_object = GetValues(branch)
     data = get_values_object.compl_proc()
@@ -49,7 +49,7 @@ def generate_docx(branch):
     graph_fields = FIELDS[:5]
     graph_fields = [ '\n'.join(wrap(l, 20)) for l in graph_fields ]
     fig = matpyplot.figure(figsize = (10, 5))
-    matpyplot.bar(graph_fields, graph_values, color ='maroon',
+    matpyplot.bar(graph_fields, graph_values, color ='#4472C4',
             width = 0.4)
     for i in range(len(graph_fields)):
         matpyplot.text(i, graph_values[i], graph_values[i], ha = 'center')
@@ -61,6 +61,8 @@ def generate_docx(branch):
     # matpyplot.show()
     matpyplot.savefig('special_values_bar.png')
     document.add_picture('special_values_bar.png', width=Inches(5), height=Inches(2.5))
+    last_paragraph = document.paragraphs[-1] 
+    last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
     # para = document.add_paragraph()
     # run = para.add_run()
     # run.add_break(WD_BREAK.LINE)
@@ -69,10 +71,13 @@ def generate_docx(branch):
     pie_values = [special_values[3], special_values[1] - special_values[3]]
     pie_fields = ['Placed Students', 'Unplaced Students']
     pie_explode = (0, 0.2)
-    matpyplot.pie(pie_values, labels = pie_fields, autopct=lambda p: '{:.0f}%'.format(p), shadow=True, startangle=90, explode=pie_explode)
+    pie_colors = ["#4472C4", "#D9E2F3"]
+    matpyplot.pie(pie_values, labels = pie_fields, autopct=lambda p: '{:.0f}%'.format(p), shadow=True, startangle=90, explode=pie_explode, colors=pie_colors)
     matpyplot.title("Placed and unplaced students")
     matpyplot.savefig('special_values_pie.png')
     document.add_picture('special_values_pie.png', width=Inches(5), height=Inches(2.5))
+    last_paragraph = document.paragraphs[-1] 
+    last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
     document.add_page_break()
 
 
@@ -121,7 +126,7 @@ def generate_docx(branch):
     hdr_cells[1].text = 'Scholar Number'
     hdr_cells[2].text = 'Candidate Name'
     hdr_cells[3].text = "Company's Name"
-    hdr_cells[4].text = 'CTC (LPA)'
+    hdr_cells[4].text = 'Stipend (KPM)'
     for i in range(len(sixm_data)):
         row_cells = table.add_row().cells
         row_cells[0].text = str(sixm_data[i][0])
@@ -198,7 +203,7 @@ def generate_docx(branch):
         graph_values = [int(i[1]) for i in PREV_YEAR_DATA]
         graph_fields = [i[0] for i in PREV_YEAR_DATA]
         fig = matpyplot.figure(figsize = (10, 5))
-        matpyplot.bar(graph_fields, graph_values, color ='maroon',
+        matpyplot.bar(graph_fields, graph_values, color ='#4472C4',
                 width = 0.4)
         matpyplot.title("No of companies visited")
         for i in range(len(graph_fields)):
@@ -210,7 +215,7 @@ def generate_docx(branch):
         graph_values = [int(i[3]) for i in PREV_YEAR_DATA]
         graph_fields = [i[0] for i in PREV_YEAR_DATA]
         fig = matpyplot.figure(figsize = (10, 5))
-        matpyplot.bar(graph_fields, graph_values, color ='maroon',
+        matpyplot.bar(graph_fields, graph_values, color ='#4472C4',
                 width = 0.4)
         matpyplot.title("Average Package")
         for i in range(len(graph_fields)):
@@ -222,7 +227,7 @@ def generate_docx(branch):
         graph_values = [int(i[2]) for i in PREV_YEAR_DATA]
         graph_fields = [i[0] for i in PREV_YEAR_DATA]
         fig = matpyplot.figure(figsize = (10, 5))
-        matpyplot.bar(graph_fields, graph_values, color ='maroon',
+        matpyplot.bar(graph_fields, graph_values, color ='#4472C4',
                 width = 0.4)
         matpyplot.title("No. of offers")
         for i in range(len(graph_fields)):

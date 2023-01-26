@@ -87,6 +87,7 @@ class GetValues:
             total_offers = 0
             number_of_placed = 0
             number_of_sixm = 0
+            companies_visited = set()
             all_packages = []
             for i in range(0, len(data)):
                 if len(data[i]) == 0:
@@ -112,6 +113,7 @@ class GetValues:
                         except:
                             company_name = company[i][0]
                         one_data.append(company_name)
+                        companies_visited.add(company_name)
                         try:
                             one_data.append(self.company_dict[company_name][2])
                             all_packages.append(self.company_dict[company_name][2])
@@ -136,6 +138,7 @@ class GetValues:
                                 sorted_all_offers = sorted(all_offers, reverse=True)
                                 company_name = sorted_all_offers[0][1]
                         one_data.append(company_name)
+                        companies_visited.add(company_name)
                         try:
                             one_data.append(self.company_dict[company_name][2])
                         except:
@@ -159,8 +162,9 @@ class GetValues:
                                 sorted_all_offers = sorted(all_offers, reverse=True)
                                 company_name = sorted_all_offers[0][1]
                         one_data.append(company_name)
+                        companies_visited.add(company_name)
                         try:
-                            one_data.append(self.company_dict[company_name][2])
+                            one_data.append(self.company_dict[company_name][3])
                         except:
                             one_data.append('*')
 
@@ -170,6 +174,13 @@ class GetValues:
             self.total_offers = total_offers
             self.number_of_placed = number_of_placed
             self.number_of_sixm = number_of_sixm
+            for i in companies_visited:
+                if i == '*':
+                    companies_visited.remove(i)
+                    
+            bcws = set(self.branch_companies_with_selections)
+            self.branch_companies_with_selections = list(bcws.union(companies_visited))
+            # self.companies_visited = companies_visited
             for i in all_packages:
                 if i == '*':
                     all_packages.remove(i)
@@ -198,7 +209,7 @@ class GetValues:
         
         service = build('sheets', 'v4', credentials=self.creds)
         SPREADSHEET_ID = '19orX5CPrQ7GPyZvQKOHjVZrhKK2dfMLFZj4B7YbFu54'
-        RANGES = ['Sheet1!A5:A2000', 'Eligible Count!E'+str(BRANCH_DETAILS[self.branch][2])]
+        RANGES = ['Sheet1!A5:A2000', 'Sheet1!'+BRANCH_DETAILS[self.branch][1]+'5:'+BRANCH_DETAILS[self.branch][1]+'2000', 'Eligible Count!E'+str(BRANCH_DETAILS[self.branch][2])]
         VALUE_RENDER_OPTION = 'UNFORMATTED_VALUE'
         sheet = service.spreadsheets()
         result = sheet.values().batchGet(spreadsheetId=SPREADSHEET_ID,
@@ -210,12 +221,15 @@ class GetValues:
         # print(fresult[0])
         special_list = []
         total_companies_count = 0
-        while total_companies_count < len(fresult[0]) and len(fresult[0][total_companies_count]):
-            total_companies_count += 1
+        for i in range(len(fresult[1])):
+            if i >= len(fresult[0]) or len(fresult[0][i]) == 0:
+                break
+            if len(fresult[1][i]) > 0:
+                total_companies_count += 1
         special_list.append(total_companies_count)
 
 
-        strength = fresult[1][0][0]
+        strength = fresult[2][0][0]
         special_list.append(strength)
 
         total_offers = self.total_offers
@@ -257,7 +271,7 @@ class GetValues:
             # Call the Sheets API
             
             SPREADSHEET_ID = '19orX5CPrQ7GPyZvQKOHjVZrhKK2dfMLFZj4B7YbFu54'
-            RANGES = ['Sheet1!C5:C500', 'Sheet1!'+BRANCH_DETAILS[self.branch][1]+'5:'+BRANCH_DETAILS[self.branch][1]+'500', 'Sheet1!Z5:Z500']
+            RANGES = ['Sheet1!C5:C500', 'Sheet1!'+BRANCH_DETAILS[self.branch][1]+'5:'+BRANCH_DETAILS[self.branch][1]+'500', 'Sheet1!Z5:Z500', 'Sheet1!AA5:AA500', 'Sheet1!Y5:Y500']
             VALUE_RENDER_OPTION = 'UNFORMATTED_VALUE'
             sheet = service.spreadsheets()
             result = sheet.values().batchGet(spreadsheetId=SPREADSHEET_ID,
@@ -269,6 +283,8 @@ class GetValues:
             names = fresult[0]
             count = fresult[1]
             ctc = fresult[2]
+            stipend = fresult[3]
+            sixm_count = fresult[4]
 
             
             # if not values:
@@ -288,16 +304,24 @@ class GetValues:
                 selections = 0
                 ctc_value = '*'
                 if i < len(ctc) and len(ctc[i]):
-                    ctc_value = ctc[i][0]                    
+                    ctc_value = ctc[i][0]     
+                stipend_value = '*'
+                if i < len(stipend) and len(stipend[i]):
+                    stipend_value = stipend[i][0]                             
                 if i < len(count) and len(count[i]):
                     selections = count[i][0]
                     branch_companies_with_selections.append(com_name)
                     if count[i][0] == 0:
-                        branch_companies_without_selections.append(com_name)
+                        # Can remove this. Conditional
+                        if i < len(sixm_count) and len(sixm_count[i]):
+                            if sixm_count[i][0] == 0:
+                                branch_companies_without_selections.append(com_name)
+                        else:
+                            branch_companies_without_selections.append(com_name)
                     else:
                         if ctc_value != '*':
                             companies_with_selections.append([com_name, selections, ctc_value])
-                company_dict[com_name] = [com_name, selections, ctc_value]
+                company_dict[com_name] = [com_name, selections, ctc_value, stipend_value]
                 # print(company_dict[com_name])
                 # Print columns A and E, which correspond to indices 0 and 4.
                 # print(row[0], row[6], row[23])
