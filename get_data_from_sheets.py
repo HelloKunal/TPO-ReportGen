@@ -12,10 +12,20 @@ from googleapiclient.errors import HttpError
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
+BRANCH_DETAILS = {
+    "CSE": ["Computer Science and Engineering", 'I', 4],
+    "ECE": ["Electronics and Communications Engineering", 'H', 5],
+    "EE": ["Electrical Engineering", 'F', 6],
+    "ME": ["Mechanical Engineering", 'G', 7],
+    "CHEM": ["Chemical Engineering", 'K', 8],
+    "CE": ["Civil Engineering", 'E', 9],
+    "MME": ["Metallurgy and Material Science Engineering", 'J', 10],
+}
 # The ID and range of a sample spreadsheet.
 class GetValues:
-    def __init__(self) -> None:
+    def __init__(self, branch) -> None:
         creds = None
+        self.branch = branch
         if os.path.exists('token.json'):
             creds = Credentials.from_authorized_user_file('token.json', SCOPES)
         # If there are no (valid) credentials available, let the user log in.
@@ -24,7 +34,7 @@ class GetValues:
                 creds.refresh(Request())
             else:
                 flow = InstalledAppFlow.from_client_secrets_file(
-                    'credentials.json', SCOPES)
+                    'static/credentials.json', SCOPES)
                 creds = flow.run_local_server(port=0)
             # Save the credentials for the next run
             with open('token.json', 'w') as token:
@@ -39,7 +49,7 @@ class GetValues:
         super_list.append(self.branch_companies_with_selections)
         super_list.append(self.branch_companies_without_selections)
         super_list.append(self.companies_with_selections)
-        print(super_list)
+        # print(super_list)
         return super_list
 
     def student_values(self):
@@ -55,6 +65,7 @@ class GetValues:
             sheet = service.spreadsheets()
             result = sheet.values().batchGet(spreadsheetId=SPREADSHEET_ID,
                                         ranges=RANGES, valueRenderOption=VALUE_RENDER_OPTION).execute()
+            # print(result)
             fresult = []
             for r in result['valueRanges']:
                 fresult.append((r['values']))
@@ -80,15 +91,26 @@ class GetValues:
             for i in range(0, len(data)):
                 if len(data[i]) == 0:
                     break
-                if data[i][1] == 'Computer Science and Engineering':
-                    number_of_placed += 1
+                if data[i][1] == BRANCH_DETAILS[self.branch][0]:
                     if  len(company[i]):
                         total_offers += 1
+                        number_of_placed += 1
                         one_data = []
                         one_data.append(data[i][2])
                         one_data.append(data[i][0])
                         company_name = '*'
                         company_name = company[i][0]
+                        try:
+                            if ',' in company_name:
+                                all_offers = []
+                                companies = company_name.split(", ")
+                                for com in companies:
+                                    its_ctc = self.company_dict[com][2]
+                                    all_offers.append([its_ctc, com])
+                                    sorted_all_offers = sorted(all_offers, reverse=True)
+                                    company_name = sorted_all_offers[0][1]
+                        except:
+                            company_name = company[i][0]
                         one_data.append(company_name)
                         try:
                             one_data.append(self.company_dict[company_name][2])
@@ -97,13 +119,22 @@ class GetValues:
                             one_data.append('*')
 
                         fte_data.append(one_data)
-                    elif len(ppocompany[i]):
+                    elif i < len(ppocompany) and len(ppocompany[i]):
                         total_offers += 1
+                        number_of_placed += 1
                         one_data = []
                         one_data.append(data[i][2])
                         one_data.append(data[i][0])
                         company_name = '*'
                         company_name = ppocompany[i][0]
+                        if ',' in company_name:
+                            all_offers = []
+                            companies = company_name.split(", ")
+                            for com in companies:
+                                its_ctc = self.company_dict[com][2]
+                                all_offers.append([its_ctc, com])
+                                sorted_all_offers = sorted(all_offers, reverse=True)
+                                company_name = sorted_all_offers[0][1]
                         one_data.append(company_name)
                         try:
                             one_data.append(self.company_dict[company_name][2])
@@ -111,7 +142,7 @@ class GetValues:
                             one_data.append('*')
 
                         ppo_data.append(one_data)
-                    if len(sixmcompany[i]):
+                    if i < len(sixmcompany) and len(sixmcompany[i]):
                         total_offers += 1
                         number_of_sixm += 1
                         one_data = []
@@ -119,6 +150,14 @@ class GetValues:
                         one_data.append(data[i][0])
                         company_name = '*'
                         company_name = sixmcompany[i][0]
+                        if ',' in company_name:
+                            all_offers = []
+                            companies = company_name.split(", ")
+                            for com in companies:
+                                its_ctc = self.company_dict[com][2]
+                                all_offers.append([its_ctc, com])
+                                sorted_all_offers = sorted(all_offers, reverse=True)
+                                company_name = sorted_all_offers[0][1]
                         one_data.append(company_name)
                         try:
                             one_data.append(self.company_dict[company_name][2])
@@ -131,6 +170,9 @@ class GetValues:
             self.total_offers = total_offers
             self.number_of_placed = number_of_placed
             self.number_of_sixm = number_of_sixm
+            for i in all_packages:
+                if i == '*':
+                    all_packages.remove(i)
             self.all_packages = all_packages
 
             # print(fte_data)
@@ -156,12 +198,13 @@ class GetValues:
         
         service = build('sheets', 'v4', credentials=self.creds)
         SPREADSHEET_ID = '19orX5CPrQ7GPyZvQKOHjVZrhKK2dfMLFZj4B7YbFu54'
-        RANGES = ['Sheet1!A5:A2000', 'Eligible Count!E4']
+        RANGES = ['Sheet1!A5:A2000', 'Eligible Count!E'+str(BRANCH_DETAILS[self.branch][2])]
         VALUE_RENDER_OPTION = 'UNFORMATTED_VALUE'
         sheet = service.spreadsheets()
         result = sheet.values().batchGet(spreadsheetId=SPREADSHEET_ID,
                                     ranges=RANGES, valueRenderOption=VALUE_RENDER_OPTION).execute()
         fresult = []
+        # print(result)
         for r in result['valueRanges']:
             fresult.append((r['values']))
         # print(fresult[0])
@@ -196,6 +239,7 @@ class GetValues:
         special_list.append(average_package)
 
         median_package = statistics.median(all_package)
+        median_package = round(median_package, 2)
         special_list.append(median_package)
 
         highest_package = max(all_package)
@@ -213,7 +257,7 @@ class GetValues:
             # Call the Sheets API
             
             SPREADSHEET_ID = '19orX5CPrQ7GPyZvQKOHjVZrhKK2dfMLFZj4B7YbFu54'
-            RANGES = ['Sheet1!C5:C500', 'Sheet1!I5:I500', 'Sheet1!Z5:Z500']
+            RANGES = ['Sheet1!C5:C500', 'Sheet1!'+BRANCH_DETAILS[self.branch][1]+'5:'+BRANCH_DETAILS[self.branch][1]+'500', 'Sheet1!Z5:Z500']
             VALUE_RENDER_OPTION = 'UNFORMATTED_VALUE'
             sheet = service.spreadsheets()
             result = sheet.values().batchGet(spreadsheetId=SPREADSHEET_ID,
@@ -251,7 +295,8 @@ class GetValues:
                     if count[i][0] == 0:
                         branch_companies_without_selections.append(com_name)
                     else:
-                        companies_with_selections.append([com_name, selections, ctc_value])
+                        if ctc_value != '*':
+                            companies_with_selections.append([com_name, selections, ctc_value])
                 company_dict[com_name] = [com_name, selections, ctc_value]
                 # print(company_dict[com_name])
                 # Print columns A and E, which correspond to indices 0 and 4.
