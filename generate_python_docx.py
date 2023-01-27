@@ -7,32 +7,46 @@ from textwrap import wrap
 from docx.enum.text import WD_BREAK, WD_ALIGN_PARAGRAPH
 from datetime import date
 import json
+import os
+
+FIELDS = [
+    'No. of companies visited',
+    'Total Strength',
+    'No. of offers',
+    'No. of students placed',
+    'No. of students with 6-month Internship',
+    'Percentage Placement',
+    'Average Package',
+    'Median Package',
+    'Highest Package',
+    'Lowest Package',
+]
 
 def generate_docx(branch):
-    document = Document('static/default_theme.docx')
-
-    document.add_picture('static/front_page.png', width=Inches(6), height=Inches(8))
-
     get_values_object = GetValues(branch)
     data = get_values_object.compl_proc()
+
+    document = Document('static/default_theme.docx')
+    headerIdx = 0
+
+    document.add_picture('static/front_page.png', width=Inches(6), height=Inches(8))
     document.add_page_break()
-    # generate_docs_object.createNew()
-    # fte_data = fte_data[:10]
-    # print(fte_data)
+    headerIdx += 1
+
+    with open('static/header_footer.json') as f:
+        file_string = f.read()
+    HEADER_FOOTER_DATA = json.loads(file_string)
+    HEADER_FOOTER = HEADER_FOOTER_DATA[branch]
+
     document.add_heading(branch+' DEPARTMENT (BATCH 2022-2023)', level=0)
-    FIELDS = [
-        'No. of companies visited',
-        'Total Strength',
-        'No. of offers',
-        'No. of students placed',
-        'No. of students with 6-month Internship',
-        'Percentage Placement',
-        'Average Package',
-        'Median Package',
-        'Highest Package',
-        'Lowest Package',
-    ]      
-    document.add_heading('1.    Placement Stats 2022-23:', level=1)
+
+    if len(HEADER_FOOTER['HEADER']) != 0:
+        document.add_heading(str(headerIdx)+'.    Overview:', level=1)
+        document.add_paragraph(HEADER_FOOTER['HEADER'])
+        document.add_page_break()
+        headerIdx += 1
+         
+    document.add_heading(str(headerIdx)+'.    Placement Stats 2022-23:', level=1)
     table = document.add_table(rows=0, cols=2)
     table.style = 'Table Grid'
     special_values = data[3]
@@ -40,9 +54,6 @@ def generate_docx(branch):
         row_cells = table.add_row().cells
         row_cells[0].text = FIELDS[i]
         row_cells[1].text = str(special_values[i])
-    # para = document.add_paragraph()
-    # run = para.add_run()
-    # run.add_break(WD_BREAK.LINE)
 
 
     graph_values = special_values[:5]
@@ -59,8 +70,8 @@ def generate_docx(branch):
     # matpyplot.ylabel("No. of students enrolled")
     # matpyplot.title("Students enrolled in different courses")
     # matpyplot.show()
-    matpyplot.savefig('special_values_bar.png')
-    document.add_picture('special_values_bar.png', width=Inches(5), height=Inches(2.5))
+    matpyplot.savefig('generated_figures/special_values_bar.png')
+    document.add_picture('generated_figures/special_values_bar.png', width=Inches(5), height=Inches(2.5))
     last_paragraph = document.paragraphs[-1] 
     last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
     # para = document.add_paragraph()
@@ -74,14 +85,14 @@ def generate_docx(branch):
     pie_colors = ["#4472C4", "#D9E2F3"]
     matpyplot.pie(pie_values, labels = pie_fields, autopct=lambda p: '{:.0f}%'.format(p), shadow=True, startangle=90, explode=pie_explode, colors=pie_colors)
     matpyplot.title("Placed and unplaced students")
-    matpyplot.savefig('special_values_pie.png')
-    document.add_picture('special_values_pie.png', width=Inches(5), height=Inches(2.5))
+    matpyplot.savefig('generated_figures/special_values_pie.png')
+    document.add_picture('generated_figures/special_values_pie.png', width=Inches(5), height=Inches(2.5))
     last_paragraph = document.paragraphs[-1] 
     last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
     document.add_page_break()
 
 
-    document.add_heading('1.1   Campus Placement List (FTE):', level=1)
+    document.add_heading(str(headerIdx)+'.1   Campus Placement List (FTE):', level=1)
     fte_data = data[0]
     table = document.add_table(rows=1, cols=len(fte_data[0]))
     table.style = 'Table Grid'
@@ -99,7 +110,7 @@ def generate_docx(branch):
         row_cells[3].text = str(fte_data[i][3])
         row_cells[4].text = str(fte_data[i][4])
 
-    document.add_heading('1.2   Students With PPO:', level=1)
+    document.add_heading(str(headerIdx)+'.2   Students With PPO:', level=1)
     ppo_data = data[1]
     table = document.add_table(rows=1, cols=len(ppo_data[0]))
     table.style = 'Table Grid'
@@ -117,7 +128,7 @@ def generate_docx(branch):
         row_cells[3].text = str(ppo_data[i][3])
         row_cells[4].text = str(ppo_data[i][4])
 
-    document.add_heading('1.2   Internships (6 Month):', level=1)
+    document.add_heading(str(headerIdx)+'.3   Internships (6 Month):', level=1)
     sixm_data = data[2]
     table = document.add_table(rows=1, cols=len(sixm_data[0]))
     table.style = 'Table Grid'
@@ -134,9 +145,8 @@ def generate_docx(branch):
         row_cells[2].text = str(sixm_data[i][2])
         row_cells[3].text = str(sixm_data[i][3])
         row_cells[4].text = str(sixm_data[i][4])
-    document.add_page_break()
 
-    document.add_heading('1.4   Companies visited:', level=1)
+    document.add_heading(str(headerIdx)+'.4   Companies visited:', level=1)
     company_names = data[4]
     table = document.add_table(rows=0, cols=4)
     table.style = 'Table Grid'
@@ -147,7 +157,7 @@ def generate_docx(branch):
         row_cells[2].text = company_names[4*i+2]
         row_cells[3].text = company_names[4*i+3]
 
-    document.add_heading('1.5.	Companies visited(with selections):', level=1)
+    document.add_heading(str(headerIdx)+'.5.	Companies visited(with selections):', level=1)
     companies_with_selections = data[6]
     table = document.add_table(rows=1, cols=4)
     table.style = 'Table Grid'
@@ -163,7 +173,7 @@ def generate_docx(branch):
         row_cells[2].text = str(companies_with_selections[i][2])
         row_cells[3].text = str(companies_with_selections[i][3])
 
-    document.add_heading('1.6.	Companies visited(with no selections):', level=1)
+    document.add_heading(str(headerIdx)+'.6.	Companies visited(with no selections):', level=1)
     branch_companies_without_selections = data[5]
     table = document.add_table(rows=0, cols=4)
     table.style = 'Table Grid'
@@ -181,8 +191,9 @@ def generate_docx(branch):
 
     if len(PREV_YEAR_DATA):
         document.add_page_break()
+        headerIdx += 1
         PREV_YEAR_DATA.append(["2022-23", special_values[0], special_values[2], special_values[6]])
-        document.add_heading('2.1   Tabular Comparison:', level=1)
+        document.add_heading(str(headerIdx)+'.1   Tabular Comparison:', level=1)
         table = document.add_table(rows=4, cols=1)
         table.style = 'Table Grid'
         hdr_cells = table.columns[0].cells
@@ -198,7 +209,7 @@ def generate_docx(branch):
             col_cells[3].text = str(PREV_YEAR_DATA[i][3])
 
 
-        document.add_heading('2.2   Graphs for Comparison with previous years:', level=1)
+        document.add_heading(str(headerIdx)+'.2   Graphs for Comparison with previous years:', level=1)
         document.add_heading('a)	 No of companies visited:', level=2)
         graph_values = [int(i[1]) for i in PREV_YEAR_DATA]
         graph_fields = [i[0] for i in PREV_YEAR_DATA]
@@ -208,8 +219,8 @@ def generate_docx(branch):
         matpyplot.title("No of companies visited")
         for i in range(len(graph_fields)):
             matpyplot.text(i, graph_values[i], graph_values[i], ha = 'center')
-        matpyplot.savefig('prev_no_companies.png')
-        document.add_picture('prev_no_companies.png', width=Inches(6), height=Inches(3))
+        matpyplot.savefig('generated_figures/prev_no_companies.png')
+        document.add_picture('generated_figures/prev_no_companies.png', width=Inches(6), height=Inches(3))
 
         document.add_heading('b)	 Average package distribution:', level=2)
         graph_values = [int(i[3]) for i in PREV_YEAR_DATA]
@@ -220,8 +231,8 @@ def generate_docx(branch):
         matpyplot.title("Average Package")
         for i in range(len(graph_fields)):
             matpyplot.text(i, graph_values[i], graph_values[i], ha = 'center')
-        matpyplot.savefig('prev_avg_package.png')
-        document.add_picture('prev_avg_package.png', width=Inches(6), height=Inches(3))
+        matpyplot.savefig('generated_figures/prev_avg_package.png')
+        document.add_picture('generated_figures/prev_avg_package.png', width=Inches(6), height=Inches(3))
                 
         document.add_heading('c)	No. of Offers:', level=2)
         graph_values = [int(i[2]) for i in PREV_YEAR_DATA]
@@ -232,9 +243,24 @@ def generate_docx(branch):
         matpyplot.title("No. of offers")
         for i in range(len(graph_fields)):
             matpyplot.text(i, graph_values[i], graph_values[i], ha = 'center')
-        matpyplot.savefig('prev_no_offers.png')
-        document.add_picture('prev_no_offers.png', width=Inches(6), height=Inches(3))
+        matpyplot.savefig('generated_figures/prev_no_offers.png')
+        document.add_picture('generated_figures/prev_no_offers.png', width=Inches(6), height=Inches(3))
 
+    if len(HEADER_FOOTER['FOOTER']) != 0:
+        document.add_heading(str(headerIdx)+'.    Analysis:', level=1)
+        document.add_paragraph(HEADER_FOOTER['FOOTER'])
+        headerIdx += 1
+
+    matpyplot.close('all')
     today = date.today()
     curr_timestamp = today.strftime("%B_%d_%Y")
-    document.save('static/TPO_REPORT_'+branch+'_'+curr_timestamp+'.docx')
+    parent_dir = 'generated_reports/'
+    directory = str(today.strftime("%B_%Y"))
+    path = os.path.join(parent_dir, directory)
+    try:
+        os.mkdir(path)
+    except:
+        # print(path)
+        pass
+    document.save(path+'/TPO_REPORT_'+branch+'_'+curr_timestamp+'.docx')
+    print('Saved '+branch+' Report.')

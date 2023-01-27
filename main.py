@@ -5,6 +5,9 @@ with open('static/BRANCH.txt') as f:
 
 all_branches = all_branches.splitlines()
 for branch in all_branches:
-    generate_docx(branch)
+    try:
+        generate_docx(branch)
+    except Exception as e:
+        print(e)
 
 

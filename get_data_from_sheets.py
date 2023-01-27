@@ -220,14 +220,9 @@ class GetValues:
             fresult.append((r['values']))
         # print(fresult[0])
         special_list = []
-        total_companies_count = 0
-        for i in range(len(fresult[1])):
-            if i >= len(fresult[0]) or len(fresult[0][i]) == 0:
-                break
-            if len(fresult[1][i]) > 0:
-                total_companies_count += 1
-        special_list.append(total_companies_count)
 
+        total_companies_count = len(self.branch_companies_with_selections)
+        special_list.append(total_companies_count)
 
         strength = fresult[2][0][0]
         special_list.append(strength)
