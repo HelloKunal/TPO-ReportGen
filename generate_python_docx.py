@@ -32,7 +32,6 @@ def generate_docx(branch):
     document.add_picture('static/front_page.png', width=Inches(6), height=Inches(8))
     document.add_page_break()
     headerIdx += 1
-
     with open('static/header_footer.json') as f:
         file_string = f.read()
     HEADER_FOOTER_DATA = json.loads(file_string)

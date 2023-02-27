@@ -44,11 +44,17 @@ class GetValues:
 
     def compl_proc(self):
         self.company_values()
+        # print("1")
         super_list = self.student_values()
+        # print("1")
         super_list.append(self.special_values())
+        # print("1")
         super_list.append(self.branch_companies_with_selections)
+        # print("1")
         super_list.append(self.branch_companies_without_selections)
+        # print("1")
         super_list.append(self.companies_with_selections)
+        # print("1")
         # print(super_list)
         return super_list
 
@@ -112,6 +118,7 @@ class GetValues:
                                     company_name = sorted_all_offers[0][1]
                         except:
                             company_name = company[i][0]
+                        fte_company_name = company_name
                         one_data.append(company_name)
                         companies_visited.add(company_name)
                         try:
@@ -121,9 +128,10 @@ class GetValues:
                             one_data.append('*')
 
                         fte_data.append(one_data)
-                    elif i < len(ppocompany) and len(ppocompany[i]):
+
+                    if i < len(ppocompany) and len(ppocompany[i]):
                         total_offers += 1
-                        number_of_placed += 1
+                        # number_of_placed += 1
                         one_data = []
                         one_data.append(data[i][2])
                         one_data.append(data[i][0])
@@ -143,10 +151,10 @@ class GetValues:
                             one_data.append(self.company_dict[company_name][2])
                         except:
                             one_data.append('*')
-
                         ppo_data.append(one_data)
+
                     if i < len(sixmcompany) and len(sixmcompany[i]):
-                        total_offers += 1
+                        # total_offers += 1
                         number_of_sixm += 1
                         one_data = []
                         one_data.append(data[i][2])
@@ -161,6 +169,8 @@ class GetValues:
                                 all_offers.append([its_ctc, com])
                                 sorted_all_offers = sorted(all_offers, reverse=True)
                                 company_name = sorted_all_offers[0][1]
+                        if company_name != fte_company_name:
+                            total_offers += 1
                         one_data.append(company_name)
                         companies_visited.add(company_name)
                         try:
@@ -187,6 +197,7 @@ class GetValues:
             self.all_packages = all_packages
 
             # print(fte_data)
+            # print(ppo_data)
             fte_data = sorted(fte_data, key=itemgetter(2, 1))
             ppo_data = sorted(ppo_data, key=itemgetter(2, 1))
             sixm_data = sorted(sixm_data, key=itemgetter(2, 1))
@@ -202,6 +213,7 @@ class GetValues:
             # return data
             return [fte_data, ppo_data, sixm_data]
         except HttpError as err:
+            print("student_values")
             print(err)
 
     
@@ -332,6 +344,7 @@ class GetValues:
                 companies_with_selections[i-1].insert(0, i)
             self.companies_with_selections = companies_with_selections
         except HttpError as err:
+            print("company_values")
             print(err)
 
 
